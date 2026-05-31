@@ -1,19 +1,20 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy import sparse
+from scipy.sparse import lil_matrix, csr_matrix
+from scipy.sparse.linalg import spsolve
 
 # FEM Config:
-# - PDE:             1D Poisson equation: -d/dx(α·dφ/dx) + β·φ = f
-# - Elements:        Linear 1D elements (P1), 2 nodes per element
-# - Basis functions: Linear Lagrange hat functions (φ₁=(x₂-x)/Lₑ, φ₂=(x-x₁)/Lₑ)
-# - Quadrature:      1-point midpoint rule (evaluation at xM = (x1+x2)/2)
-# - Method:          Galerkin FEM
-# - BC:              Dirichlet (strong enforcement via inner_nodes) + Robin (weak form)
+# PDE:             1D Poisson equation: -d/dx(α·dφ/dx) + β·φ = f
+# Elements:        Linear 1D elements (P1), 2 nodes per element
+# Basis functions: Linear Lagrange hat functions (φ₁=(x₂-x)/Lₑ, φ₂=(x-x₁)/Lₑ)
+# Quadrature:      1-point midpoint rule (evaluation at xM = (x1+x2)/2)
+# Method:          Galerkin FEM
+# BC:              Dirichlet (strong enforcement via inner_nodes) + Robin (weak form)
 
 #p list contains the coordinates of the nodes
 p=[1.75, 2.0, 1.25, 1.0, 1.5]
 
-#t list contains the connectivity of the elements. Only works for linear elements.
+#t list contains the connectivity of the elements. Only works for linear elements
 t = [[np.argsort(p)[i], np.argsort(p)[i+1]] for i in range(len(p)-1)]
 
 # Definitions of the functions and parameters for the PDE:
@@ -23,6 +24,7 @@ t = [[np.argsort(p)[i], np.argsort(p)[i+1]] for i in range(len(p)-1)]
 # β(x): Material property: Reaction coefficient: 0 in electrostatics
 # f(x): Source term: Volume charge density ρ(x) [C/m^3]
 # q(x): boundary condition: Surface charge density σ(x) [C/m^2]
+# γ(x): boundary condition: Robin coefficient: 0 for Neumann, ∞ for Dirichlet, finite for Robin [As/Vm]
 
 def alpha(x): return x**2
 def beta(x): return x
@@ -39,7 +41,7 @@ rR = []
 #######################################################################################################
 # calculate the local stiffness matrix for an element defined by its two nodes at coordinates x1 and x2
 N = len(p)
-K = np.zeros((N, N))
+K = lil_matrix((N, N))
 D = np.zeros(N)
 
 for i in range(len(t)):
@@ -81,28 +83,26 @@ for r in rR:
     K[r,r] += gamma(x_r)
     D[r] += q(x_r)
 
+#Converts to CSR for efficient column slicing and arithmetic
+K_csr = csr_matrix(K)
+
 # Dirichlet boundary condition Assembly
 
 for d, phi_d in zip(dR, PhiR):
-    D = D -phi_d * K[:,d]
+    D = D -phi_d * K_csr[:,d]
 
 inner_nodes = [i for i in range(N) if i not in dR]
-K_reduced = K[np.ix_(inner_nodes, inner_nodes)]
+K_reduced = K_csr[np.ix_(inner_nodes, inner_nodes)]
 D_reduced = D[inner_nodes]
 
-# Solve the linear system for the inner nodes
-Phi_inner = np.linalg.solve(K_reduced, D_reduced)
+# Solve the linear system for the inner nodes using a sparse solver
+Phi_inner = spsolve(K_reduced, D_reduced)
 
 # Construct the full solution vector
-
 Phi_complete = np.zeros(N)
-
-#inner nodes sorting
-for i, node in enumerate(inner_nodes):
+for i, node in enumerate(inner_nodes):  #inner nodes
     Phi_complete[node] = Phi_inner[i]
-
-# Dirichlet nodes sorting
-for d, phi_d in zip(dR, PhiR):
+for d, phi_d in zip(dR, PhiR):          #Dirichlet nodes
     Phi_complete[d] = phi_d
 
 # Output the results
