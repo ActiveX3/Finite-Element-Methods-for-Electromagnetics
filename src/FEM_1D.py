@@ -2,10 +2,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import sparse
 
+# FEM Config:
+# - PDE:             1D Poisson equation: -d/dx(α·dφ/dx) + β·φ = f
+# - Elements:        Linear 1D elements (P1), 2 nodes per element
+# - Basis functions: Linear Lagrange hat functions (φ₁=(x₂-x)/Lₑ, φ₂=(x-x₁)/Lₑ)
+# - Quadrature:      1-point midpoint rule (evaluation at xM = (x1+x2)/2)
+# - Method:          Galerkin FEM
+# - BC:              Dirichlet (strong enforcement via inner_nodes) + Robin (weak form)
+
 #p list contains the coordinates of the nodes
-#t list contains the connectivity of the elements, i.e. which nodes belong to which element
 p=[1.75, 2.0, 1.25, 1.0, 1.5]
-t=[[2,4], [3,2],[4,0], [0,1]]
+
+#t list contains the connectivity of the elements. Only works for linear elements.
+t = [[np.argsort(p)[i], np.argsort(p)[i+1]] for i in range(len(p)-1)]
 
 # Definitions of the functions and parameters for the PDE:
 # 1D Poisson-Equation: -d/dx(α(x) dφ/dx) + β(x) φ = f(x) in Ω
@@ -27,7 +36,7 @@ PhiR = [2.0, 6.0]
 rR = []
 
 
-
+#######################################################################################################
 # calculate the local stiffness matrix for an element defined by its two nodes at coordinates x1 and x2
 N = len(p)
 K = np.zeros((N, N))
@@ -63,7 +72,7 @@ for i in range(len(t)):
     D[g2] += D_local[1]
 
 #Robin boundary condition Assembly
-# for each Robin-node r with αα·Φ' + γ·Φ = q follows:
+#     for each Robin-node r with αα·Φ' + γ·Φ = q follows:
 #   - γ*φ is added to the diagonal of the stiffness matrix at the position of node r
 #   - q is added to the right-hand side vector at the position of node r
 
