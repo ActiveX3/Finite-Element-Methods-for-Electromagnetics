@@ -89,7 +89,7 @@ K_csr = csr_matrix(K)
 # Dirichlet boundary condition Assembly
 
 for d, phi_d in zip(dR, PhiR):
-    D = D -phi_d * K_csr[:,d]
+    D = D -phi_d * K_csr[:,d].toarray().ravel()
 
 inner_nodes = [i for i in range(N) if i not in dR]
 K_reduced = K_csr[np.ix_(inner_nodes, inner_nodes)]
