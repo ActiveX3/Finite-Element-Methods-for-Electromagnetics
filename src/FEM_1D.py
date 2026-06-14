@@ -33,8 +33,8 @@ def q(x): return 0
 def gamma(x): return 0
 
 # Boundary conditions
-dR = [3, 1]
-PhiR = [2.0, 6.0]
+dR = [3, 1]         # Dirichlet positions (indices of the p list: dR[0] = 3 -> p[3] , dR[1] = 1 -> p[1])
+PhiR = [2.0, 6.0]   # Dirchilet values for the edge nodes  PhiR[i] = φ(p[dR[i]]) 
 rR = []
 
 
