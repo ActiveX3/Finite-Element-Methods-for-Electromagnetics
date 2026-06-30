@@ -1,0 +1,82 @@
+# -*- coding: utf-8 -*-
+"""
+Short Gallery of examples
+for meshpy
+
+written by Juergen Weizenecker
+
+"""
+
+import sys
+sys.path.append("../MESH")
+import numpy as np
+import meshtools as mt
+import meshpy.triangle as triangle
+import numpy.linalg as la
+import matplotlib.pyplot as plt
+
+
+length=0.1
+
+
+# Simple mesh rectangle
+p,v=mt.RectangleSegments([1.,1.],[3,4],edge_length=length)
+p1,v1=mt.RectangleSegments([1.25,3],[1.75,3.5],edge_length=length/4)
+p2,v2=mt.CircleSegments([1.5,1.75],0.35,edge_length=length/4)
+p3,v3=mt.CircleSegments([2.5,2.5],0.3,edge_length=length/4)
+p,v=mt.AddCurves(p,v,p1,v1)
+p,v=mt.AddCurves(p,v,p2,v2)
+p,v=mt.AddCurves(p,v,p3,v3)
+poi,tri,BouE,li_BE,bou_elem,CuE,li_CE=mt.DoTriMesh(p,v,edge_length=length,holes=[(2.5,2.5)])
+plt.show()
+
+np.savetxt('Netz2D_p.dat', poi , fmt='%15.13g')
+np.savetxt('Netz2D_t.dat', tri, fmt='%i')
+
+# Randkurven, a)
+Ps=[ [1,1],[1,1],[2.8,2.5],[2.8,2.5] ]
+bseg=mt.RetrieveSegments(poi,BouE,li_BE,Ps,['Nodes','Nodes'])
+mt.PlotBoundary(poi,bseg[0],'Nodes')
+mt.PlotBoundary(poi,bseg[1],'Nodes')
+plt.show()
+rand=bseg[0]+bseg[1]
+
+np.savetxt('Netz2D_dr_a).dat', rand , fmt='%i')
+
+
+# Teste abgespeicherte Daten
+p=np.loadtxt('Netz2D_p.dat', dtype=float)
+t=np.loadtxt('Netz2D_t.dat', dtype=int)
+dr=np.loadtxt('Netz2D_dr_a).dat', dtype=int)
+
+plt.triplot(p[:, 0], p[:, 1], t)
+mt.PlotBoundary(p,dr,'Nodes')
+plt.show()
+
+
+
+
+
+# Randkurven b)
+Ps=[ [1,4],[3,1],[1,4],[2.8,2.5],[2.8,2.5] ]
+bseg=mt.RetrieveSegments(poi,BouE,li_BE,Ps,['Segments','Nodes','Nodes'])
+mt.PlotBoundary(poi,bseg[0],'Segments')
+mt.PlotBoundary(poi,bseg[1],'Nodes')
+mt.PlotBoundary(poi,bseg[2],'Nodes')
+plt.show()
+rand=bseg[1]+bseg[2]
+np.savetxt('Netz2D_dr_b).dat', rand , fmt='%i')
+np.savetxt('Netz2D_rr_b).dat', bseg[0] , fmt='%i')
+
+# teste abgespeicherte Daten
+p=np.loadtxt('Netz2D_p.dat', dtype=float)
+t=np.loadtxt('Netz2D_t.dat', dtype=int)
+dr=np.loadtxt('Netz2D_dr_b).dat', dtype=int)
+rr=np.loadtxt('Netz2D_rr_b).dat', dtype=int)
+
+plt.triplot(p[:, 0], p[:, 1], t)
+mt.PlotBoundary(p,dr,'Nodes')
+mt.PlotBoundary(p,rr,'Segments')
+plt.show()
+
+
