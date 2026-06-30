@@ -14,8 +14,9 @@ from scipy.sparse.linalg import spsolve
 #p list contains the coordinates of the nodes
 p=[1.75, 2.0, 1.25, 1.0, 1.5]
 
-#t list contains the connectivity of the elements. Only works for linear elements
-t = [[np.argsort(p)[i], np.argsort(p)[i+1]] for i in range(len(p)-1)]
+#t list contains the connectivity of the elements. Only works for linear elements. 
+t = [[np.argsort(p)[i], np.argsort(p)[i+1]] for i in range(len(p)-1)] # t= [[3,2] , [2,4] , [4,0] , [0,1]
+                                                                      #      E0       E1      E2     E3
 
 # Definitions of the functions and parameters for the PDE:
 # 1D Poisson-Equation: -d/dx(α(x) dφ/dx) + β(x) φ = f(x) in Ω
@@ -45,12 +46,8 @@ K = lil_matrix((N, N))
 D = np.zeros(N)
 
 for i in range(len(t)):
-    g1, g2 = t[i][0], t[i][1]
-    x1, x2 = p[g1], p[g2]
-
-    if x1 > x2:
-        x1, x2 = x2, x1
-        g1, g2 = g2, g1
+    g1, g2 = t[i][0], t[i][1]       #assigns the node pair indices to g1,g1
+    x1, x2 = p[g1], p[g2]           # assigns the node coordinates xvales to x1, x2
 
     L_E = x2 - x1
     xM = (x1 + x2) / 2
@@ -59,12 +56,14 @@ for i in range(len(t)):
     bM = beta(xM)
     fM = f(xM)
 
-    K_diag = aM / L_E + bM * L_E / 3
+    K_diag = aM / L_E + bM * L_E / 3        
     K_offdiag = -aM / L_E + bM * L_E / 6
 
+    #local Matrice
     K_local = np.array([[K_diag, K_offdiag], [K_offdiag, K_diag]])
     D_local = np.array([fM * L_E / 2, fM * L_E / 2])
 
+    #fill the global Matrice with the local Matrice elements
     K[g1,g1] += K_local[0,0]
     K[g1,g2] += K_local[0,1]
     K[g2,g1] += K_local[1,0]
